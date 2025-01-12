@@ -1,10 +1,14 @@
 import mongoose from "mongoose";
 import dotenv from 'dotenv'
 
+dotenv.config()
+
+const connectDB = process.env.DB_CONNECT
+
 
 const connectDb = async()=>{
     try {
-        const dbConnect = await mongoose.connect('mongodb://127.0.0.1:27017/gamediary')
+        const dbConnect = await mongoose.connect(`${connectDB}`)
         console.log('Conectado ao banco');
         return dbConnect
         
@@ -13,6 +17,5 @@ const connectDb = async()=>{
 
     }
 }
-
 
 export default connectDb
