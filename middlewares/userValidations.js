@@ -34,4 +34,19 @@ const loginValidator = () => {
   ];
 };
 
-export { registerValidator, loginValidator };
+const updateValidator = () => {
+  return [
+    body('name')
+    .optional()
+    .isLength({min: 3})
+    .withMessage('O nome precisa ter no mínimo 3 caracteres.'),
+    
+    body('password')
+    .optional()
+    .isLength({min: 3})
+    .withMessage('A senha precisa ter no mínimo 3 caracteres.')
+
+  ]
+}
+
+export { registerValidator, loginValidator, updateValidator };

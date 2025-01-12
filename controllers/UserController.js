@@ -2,6 +2,7 @@ import User from '../models/User.js'
 import bcrypt from 'bcryptjs'
 import dotenv from 'dotenv'
 import jwt from 'jsonwebtoken'
+import mongoose from 'mongoose'
 
 
 dotenv.config()
@@ -79,9 +80,42 @@ const login = async(req, res) => {
     
 }
 
+const updateUser = async(req, res) => {
+    const{name, password} = req.body
+
+    const reqUser = req.user
+   
+    const user = await User.findById(new mongoose.Types.ObjectId(reqUser._id))
+
+    if(name){
+        user.name = name
+    }
+
+    if(password){
+        const salt = await bcrypt.genSalt()
+        const passportHash = await bcrypt.hash(password, salt)
+
+        user.password = passportHash
+    }
+
+    await user.save()
+
+    const userObj = user.toObject()
+    delete userObj.password
+
+    res.status(200).json(userObj)
+}
+
+const getCurrentUser = async(req, res) => {
+    const user = req.user
+    res.status(200).json(user)
+}
+
 
 export {
     register,
-    login
+    login,
+    getCurrentUser,
+    updateUser,
 }
 
