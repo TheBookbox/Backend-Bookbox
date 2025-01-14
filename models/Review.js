@@ -4,7 +4,12 @@ import { Schema } from "mongoose";
 
 const reviewSchema = new Schema({
     stars: Number,
-    review: String
+    userId: mongoose.ObjectId,
+    text: String,
+    thumbnail: String,
+
+    likes: Array,
+    comments: Array
 },{
     timestamps: true
 })
