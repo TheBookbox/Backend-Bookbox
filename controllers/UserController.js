@@ -13,7 +13,6 @@ const generateToken = (id) => {
     return jwt.sign({id}, jwtSecret, {expiresIn: '7d'})
 }
 
-
 // Register
 
 const register = async(req, res)=>{
@@ -110,6 +109,8 @@ const getCurrentUser = async(req, res) => {
     const user = req.user
     res.status(200).json(user)
 }
+
+
 
 
 export {

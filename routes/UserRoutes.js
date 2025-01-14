@@ -20,6 +20,8 @@ UserRouter.get('/profile', authGuard, getCurrentUser)
 
 UserRouter.put('/', authGuard, updateValidator(), validate, updateUser)
 
+
+
 UserRouter.get('/', (req, res) => {
     res.send('Users working')
     
