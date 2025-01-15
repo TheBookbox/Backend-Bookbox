@@ -17,6 +17,15 @@ const reviewValidation = () => {
     ]
 }
 
+const commentValidation = () => {
+    return [
+        body('text')
+        .isString()
+        .withMessage('O texto é obrigatório.')
+    ]
+}
+
 export{
-    reviewValidation
+    reviewValidation,
+    commentValidation
 }

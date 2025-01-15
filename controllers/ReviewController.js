@@ -150,11 +150,85 @@ const updateReview = async(req, res) => {
 
 }
 
+const likeReview = async(req, res) => {
+    const{id} = req.params
+    const reqUser = req.user
+
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+        return res.status(400).json({ error: ['ID inválido'] })
+    }
+
+    const review = await Review.findById(new mongoose.Types.ObjectId(id))
+
+    if(!review){
+        return res.status(404).json({error: ['Review não encontrada!']})
+    }
+
+    if(review.likes.includes(reqUser._id)){
+        return res.status(422).json({errors: 'Você já curtiu essa :)'})
+    }
+
+    
+    review.likes.push(reqUser._id)
+
+    await review.save().
+    then(saved => res.status(200).json({message: 'Like enviado'}))
+    .catch(e => {
+        console.error(e);
+        res.status(500).json({error: ['Algo deu errado.']})
+        
+    })
+
+
+    
+}
+
+const commentReview = async(req, res) => {
+    const{id} = req.params
+    const{text} = req.body
+    const reqUser = req.user
+
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+        return res.status(400).json({ error: ['ID inválido'] })
+    }
+
+    const review = await Review.findById(new mongoose.Types.ObjectId(id))
+
+    if(!review){
+        return res.status(404).json({error: ['Review não encontrada!']})
+    }
+
+    if(!text){
+        return res.status(422).json({error: ['O texto é obrigatório.']})
+    }
+
+    const data = {
+        userId: reqUser._id,
+        text,
+        date: new Date().toLocaleDateString('pt-BR'),
+        
+    }
+
+    review.comments.push(data)
+
+    await review.save().
+    then(saved => res.status(200).json({data, message: ['Comentário enviado']}))
+    .catch(e => {
+        console.error(e);
+        res.status(500).json({error: ['Algo deu errado.']})
+        
+    })
+
+   
+}
+
 export {
     insertReview,
     deleteReview,
     getAllReviews,
     getReviewById,
     getUsersReview,
-    updateReview
+    updateReview,
+    likeReview,
+    commentReview
 }

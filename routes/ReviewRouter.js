@@ -1,7 +1,7 @@
 import { Router } from "express";
 import authGuard from "../middlewares/authGuard.js";
-import { deleteReview, getAllReviews, getReviewById, getUsersReview, insertReview, updateReview } from "../controllers/ReviewController.js";
-import { reviewValidation } from "../middlewares/reviewValidations.js";
+import { commentReview, deleteReview, getAllReviews, getReviewById, getUsersReview, insertReview, likeReview, updateReview } from "../controllers/ReviewController.js";
+import { commentValidation, reviewValidation } from "../middlewares/reviewValidations.js";
 import validate from "../middlewares/handleValidation.js";
 
 const ReviewRouter = Router()
@@ -14,6 +14,8 @@ ReviewRouter.post('/', authGuard, reviewValidation(), validate, insertReview)
 ReviewRouter.delete('/:id', authGuard, deleteReview)
 
 ReviewRouter.put('/books/:id', authGuard, reviewValidation(), validate, updateReview)
+ReviewRouter.put('/books/like/:id', authGuard, likeReview)
+ReviewRouter.put('/books/comment/:id', authGuard, commentValidation(), validate, commentReview)
 
 
 
