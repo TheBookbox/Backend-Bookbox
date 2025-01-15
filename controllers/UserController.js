@@ -111,6 +111,74 @@ const getCurrentUser = async(req, res) => {
 }
 
 
+const followUser = async(req, res) => {
+    const{id} = req.params
+    const reqUser = req.user
+
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+        return res.status(400).json({ error: ['ID inválido'] })
+    }
+
+    const user = await User.findById(new mongoose.Types.ObjectId(id))
+
+    if(user.followers.includes(reqUser._id)){
+        return res.status(422).json({error: ['Você já segue esse usuário.']})
+    }
+
+    if(user._id.equals(reqUser._id)){
+        return res.status(422).json({error: ['Você não pode se seguir!']})
+    }
+
+    const userAuth = await User.findById(new mongoose.Types.ObjectId(reqUser._id))
+
+
+    userAuth.following.push({
+        userId: id,
+        email: user.email
+    })
+
+    user.followers.push({
+        userid: reqUser._id,
+        email: userAuth.email
+    })
+    
+    
+    user.save()
+    .then(saved => 
+        userAuth.save(),
+        res.status(200).json({following: [user._id], message: ['Seguindo com sucesso']}))
+    .catch(e => {
+        console.error(e);
+        res.status(500).json({error: ['Algo deu errado']})
+        
+    })
+}
+
+const getFollowings = async(req, res) => {
+    const reqUser = req.user
+
+    const user = await User.findById(new mongoose.Types.ObjectId(reqUser._id))
+
+    if(!user){
+        return res.status(404).json({error: ['Usuário não encontrado.']})
+    }
+
+    res.status(200).json(user.following)
+}
+
+const getFollowers = async(req, res) => {
+    const reqUser = req.user
+
+    const user = await User.findById(new mongoose.Types.ObjectId(reqUser._id))
+
+    if(!user){
+        return res.status(404).json({error: ['Usuário não encontrado.']})
+    }
+
+    res.status(200).json(user.followers)
+}
+
+
 
 
 export {
@@ -118,5 +186,9 @@ export {
     login,
     getCurrentUser,
     updateUser,
+
+    followUser,
+    getFollowings,
+    getFollowers
 }
 
