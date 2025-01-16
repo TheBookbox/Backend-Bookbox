@@ -2,7 +2,7 @@ import { Router } from "express";
 
 
 // Controller
-import { followUser, getCurrentUser, getFollowers, getFollowings, login, register, updateUser } from "../controllers/UserController.js";
+import { followUser, getCurrentUser, getFollowers, getFollowings, login, register, unfollowUser, updateUser } from "../controllers/UserController.js";
 
 // Middlewares
 import validate from '../middlewares/handleValidation.js'
@@ -23,6 +23,7 @@ UserRouter.put('/', authGuard, updateValidator(), validate, updateUser)
 UserRouter.put('/follow/:id', authGuard, followUser)
 UserRouter.get('/following', authGuard, getFollowings)
 UserRouter.get('/followers', authGuard, getFollowers)
+UserRouter.put('/unfollow/:id', authGuard, unfollowUser)
 
 
 
