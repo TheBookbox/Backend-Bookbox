@@ -13,8 +13,6 @@ const generateToken = (id) => {
     return jwt.sign({id}, jwtSecret, {expiresIn: '7d'})
 }
 
-// Register
-
 const register = async(req, res)=>{
     const{name, email, password } = req.body
 
@@ -138,7 +136,7 @@ const followUser = async(req, res) => {
     })
 
     user.followers.push({
-        userid: reqUser._id,
+        userId: reqUser._id,
         email: userAuth.email
     })
     
@@ -152,6 +150,46 @@ const followUser = async(req, res) => {
         res.status(500).json({error: ['Algo deu errado']})
         
     })
+}
+
+const unfollowUser = async(req, res) => {
+    const{id} = req.params
+    const reqUser = req.user
+
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+        return res.status(400).json({ error: ['ID inválido'] })
+    }
+
+    const user = await User.findById(new mongoose.Types.ObjectId(id))
+
+    const userAuth = await User.findById(new mongoose.Types.ObjectId(reqUser._id))
+
+    if(user._id.equals(reqUser._id)){
+        return res.status(422).json({error: ['Queria parar de me seguir, mas onde eu ia eu estava.']})
+    }
+
+    user.followers = user.followers.filter(filter => filter.email != reqUser.email)
+
+    userAuth.following = userAuth.following.filter(filter => filter.userId != id)
+
+    user.save()
+    .then(saved => 
+        userAuth.save(),
+        res.status(200).json({following: [user._id], message: ['Deixado de seguir']}))
+    .catch(e => {
+        console.error(e);
+        res.status(500).json({error: ['Algo deu errado']})
+        
+    })
+    
+
+
+
+
+
+
+
+
 }
 
 const getFollowings = async(req, res) => {
@@ -188,7 +226,9 @@ export {
     updateUser,
 
     followUser,
+    unfollowUser,
     getFollowings,
-    getFollowers
+    getFollowers,
+    
 }
 
