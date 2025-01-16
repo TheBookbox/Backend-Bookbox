@@ -222,6 +222,26 @@ const commentReview = async(req, res) => {
    
 }
 
+const getFollowingReview = async(req, res) => {
+    const reqUser = req.user
+
+    const user = await User.findById(new mongoose.Types.ObjectId(reqUser._id))
+
+    
+    const followingBooks = await Promise.all(
+
+        user.following.map(async (following) => {
+            return await Review.find({ userId: following.userId });
+        })
+    );
+    
+    const flattenedBooks = followingBooks.flat()
+    
+    res.status(200).json(flattenedBooks)
+    
+
+ }
+
 export {
     insertReview,
     deleteReview,
@@ -230,5 +250,7 @@ export {
     getUsersReview,
     updateReview,
     likeReview,
-    commentReview
+    commentReview,
+
+    getFollowingReview
 }
