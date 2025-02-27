@@ -14,7 +14,10 @@ const generateToken = (id) => {
 }
 
 const register = async(req, res)=>{
-    const{name, email, password } = req.body
+    let{name, email, password } = req.body
+
+    email = email.toLowerCase()
+    name = name.charAt(0).toUpperCase() + name.slice(1)
 
     const user = await User.findOne({email})
 
@@ -108,6 +111,31 @@ const getCurrentUser = async(req, res) => {
     res.status(200).json(user)
 }
 
+const getUserById = async(req, res) => {
+    const{id} = req.params
+
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+        return res.status(400).json({ error: ['ID inválido'] })
+    }
+    
+    const user = await User.findById(new mongoose.Types.ObjectId(id))
+
+    
+
+    if(!user){
+        res.status(404).json({erro: ['Nenhum usuário encontrado.']})
+    }else{
+        const userObj = user.toObject()
+        delete userObj.password
+
+        res.status(200).json(userObj)
+    
+    }
+
+       
+
+}
+
 
 const followUser = async(req, res) => {
     const{id} = req.params
@@ -195,6 +223,11 @@ const unfollowUser = async(req, res) => {
 const getFollowings = async(req, res) => {
     const reqUser = req.user
 
+
+    if (!mongoose.Types.ObjectId.isValid(reqUser._id)) {
+        return res.status(400).json({ error: ['ID inválido'] })
+    }
+
     const user = await User.findById(new mongoose.Types.ObjectId(reqUser._id))
 
     if(!user){
@@ -206,6 +239,10 @@ const getFollowings = async(req, res) => {
 
 const getFollowers = async(req, res) => {
     const reqUser = req.user
+
+    if (!mongoose.Types.ObjectId.isValid(reqUser._id)) {
+        return res.status(400).json({ error: ['ID inválido'] })
+    }
 
     const user = await User.findById(new mongoose.Types.ObjectId(reqUser._id))
 
@@ -223,6 +260,7 @@ export {
     register,
     login,
     getCurrentUser,
+    getUserById,
     updateUser,
 
     followUser,

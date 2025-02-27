@@ -7,9 +7,11 @@ const reviewSchema = new Schema({
     userId: mongoose.ObjectId,
     text: String,
     thumbnail: String,
-
+    bookName: String,
     likes: Array,
-    comments: Array
+    comments: Array,
+    userName: String,
+    bookId: String
 },{
     timestamps: true
 })

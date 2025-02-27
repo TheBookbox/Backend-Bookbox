@@ -22,15 +22,18 @@ const insertReview = async(req, res) => {
 
     const data = await searchBook(bookTrim)
 
+
     if(data.totalItems == 0){
         return res.status(502).json({error: ['Não encontramos o livro selecionado.']})
     }
 
     const bookData = {
-        title: data.items[0]?.volumeInfo?.title ?? '',
-        authors: data.items[0]?.volumeInfo?.authors[0] ?? '',
-        publishedDate: data.items[0]?.volumeInfo?.publishedDate ?? '',
-        thumbnail: data.items[0]?.volumeInfo.imageLinks?.thumbnail ?? ''
+        bookId: data.id ?? '',
+        title: data.volumeInfo?.title ?? '',
+        authors: data.volumeInfo?.authors ? data.volumeInfo.authors[0] : '',
+        publishedDate: data.volumeInfo?.publishedDate ?? '',
+        thumbnail: data.volumeInfo.imageLinks?.thumbnail ?? ''
+
     }
 
     const user = await User.findById(reqUser._id)
@@ -38,10 +41,13 @@ const insertReview = async(req, res) => {
     // Create review 
 
     const newReview = await Review.create({
+        bookId: bookData.bookId,
         stars: stars,
         userId: user._id,
         text: text,
-        thumbnail: bookData.thumbnail
+        thumbnail: bookData.thumbnail,
+        bookName: bookData.title.toUpperCase(),
+        userName: user.name
     })
 
     if(!newReview){
@@ -93,8 +99,6 @@ const getReviewById = async(req, res) => {
 
 const getUsersReview = async(req, res) => {
     const{id} = req.params
-    console.log(id);
-    
 
     if (!mongoose.Types.ObjectId.isValid(id)) {
         return res.status(400).json({ error: ['ID inválido'] })
@@ -164,15 +168,15 @@ const likeReview = async(req, res) => {
         return res.status(404).json({error: ['Review não encontrada!']})
     }
 
-    if(review.likes.includes(reqUser._id)){
-        return res.status(422).json({errors: 'Você já curtiu essa :)'})
-    }
+    // if(review.likes.includes(reqUser._id)){
+    //     return res.status(422).json({errors: 'Você já curtiu essa :)'})
+    // }
 
     
     review.likes.push(reqUser._id)
 
     await review.save().
-    then(saved => res.status(200).json({message: 'Like enviado'}))
+    then(saved => res.status(200).json({id: reqUser._id, review: saved}))
     .catch(e => {
         console.error(e);
         res.status(500).json({error: ['Algo deu errado.']})
@@ -203,6 +207,7 @@ const commentReview = async(req, res) => {
     }
 
     const data = {
+        userName: reqUser.name,
         userId: reqUser._id,
         text,
         date: new Date().toLocaleDateString('pt-BR'),
