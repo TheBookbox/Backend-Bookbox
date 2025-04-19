@@ -12,7 +12,7 @@ const authGuard = async(req, res, next) => {
 
     // check if header has a token
     if(!token){
-        return res.status(401).json({erros: ['Acesso Negado.']})
+        return res.status(401).json({erro: ['Acesso Negado.']})
     }
 
     // Check if token is valid

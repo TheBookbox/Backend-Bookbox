@@ -88,6 +88,11 @@ const deleteReview = async(req, res) => {
 const getReviewById = async(req, res) => {
     const{id} = req.params
 
+    
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+        return res.status(400).json({ error: ['ID inválido'] })
+    }
+    
     const review = await Review.findById(new mongoose.Types.ObjectId(id))
 
     if(!review){
@@ -199,14 +204,15 @@ const commentReview = async(req, res) => {
     const review = await Review.findById(new mongoose.Types.ObjectId(id))
 
     if(!review){
-        return res.status(404).json({error: ['Review não encontrada!']})
+        return res.status(404).json({erro: ['Review não encontrada!']})
     }
 
     if(!text){
-        return res.status(422).json({error: ['O texto é obrigatório.']})
+        return res.status(422).json({erro: ['O texto é obrigatório.']})
     }
 
     const data = {
+        idReview: review._id,
         userName: reqUser.name,
         userId: reqUser._id,
         text,
@@ -247,6 +253,26 @@ const getFollowingReview = async(req, res) => {
 
  }
 
+const getCommentsByReviewId = async(req, res) => {
+    const{id} = req.params
+
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+        return res.status(400).json({ error: ['ID inválido'] })
+    }
+    
+    const review = await Review.findById(new mongoose.Types.ObjectId(id))
+
+
+    if(!review){
+        return res.status(404).json({error: ['Review não encontrada!']})
+    }
+
+
+    res.status(200).json(review.comments)
+
+
+}
+
 export {
     insertReview,
     deleteReview,
@@ -256,6 +282,7 @@ export {
     updateReview,
     likeReview,
     commentReview,
+    getCommentsByReviewId,
 
     getFollowingReview
 }
