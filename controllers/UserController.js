@@ -208,7 +208,10 @@ const unfollowUser = async(req, res) => {
     user.save()
     .then(saved => 
         userAuth.save(),
-        res.status(200).json({following: [user._id], message: ['Deixado de seguir']}))
+        res.status(200).json(
+            { userId: user._id,
+             email: user.email
+         }))
     .catch(e => {
         console.error(e);
         res.status(500).json({error: ['Algo deu errado']})
