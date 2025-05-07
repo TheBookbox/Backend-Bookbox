@@ -270,8 +270,35 @@ const getCommentsByReviewId = async(req, res) => {
 
     res.status(200).json(review.comments)
 
-
 }
+
+const getPopularReview = async (req, res) => {
+    try {
+       
+        let limit = parseInt(req.query.limit) || 5;
+
+        const reviews = await Review.aggregate([
+            {
+                $addFields: {
+                    likesCount: { $size: "$likes" }
+                }
+            },
+            {
+                $sort: { likesCount: -1, createdAt: -1 }
+            },
+            {
+                $limit: limit
+            }
+        ]);
+
+        res.status(200).json(reviews);
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ error: ['Erro ao buscar reviews populares.'] });
+    }
+};
+
+
 
 export {
     insertReview,
@@ -283,6 +310,7 @@ export {
     likeReview,
     commentReview,
     getCommentsByReviewId,
+    getPopularReview,
 
     getFollowingReview
 }

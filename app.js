@@ -28,7 +28,6 @@ app.use(express.urlencoded({extended: true}))
 app.use(router)
 
 
-
 app.listen(PORT, HOST, () => console.log(`Server iniciado: ${HOST}:${PORT}`))
 
 
