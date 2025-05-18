@@ -22,7 +22,7 @@ const register = async (req, res) => {
 
   // Se tiver usuario retorna 409 Conflict informando que o email já está em uso.
   if (user) {
-    return res.status(409).json({ erro: ["Esse email já está em uso."] });
+    return res.status(409).json({ erro: ["Email já cadastrado."] });
   }
   //
 
