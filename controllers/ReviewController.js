@@ -1,13 +1,32 @@
-import mongoose, { mongo } from "mongoose";
+import mongoose from "mongoose";
 import User from "../models/User.js";
 import Review from "../models/Review.js";
 import { searchBook } from "../utils/GoogleApi.js";
 
 
 const getAllReviews = async(req, res) => {
-    const reviews = await Review.find({}).sort([['createdAt', -1]]).exec()
 
-    return res.status(200).json(reviews)
+    let limit = parseInt(req.query.limit) || 5
+
+    const total = await Review.countDocuments();
+
+    const reviews = await Review.aggregate([
+        {
+            $sort: {createdAt: -1}
+        },
+        {
+            $limit: limit
+        }
+    ])
+
+
+
+    return res.status(200).json({
+        data: reviews,
+        total: total,
+        hasMore: limit < total
+
+    })
 }
 
 const insertReview = async(req, res) => {
