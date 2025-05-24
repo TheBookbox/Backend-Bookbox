@@ -7,11 +7,13 @@ import router from './routes/Router.js'
 dotenv.config()
 
 const PORT = process.env.PORT
+const HOST = process.env.HOST
 const app = express()
 
 
 // Cors solve
-app.use(cors({credentials: true, origin: 'http://localhost:3000'}))
+app.use(cors({credentials: true, origin: '*'
+}))
 
 // DB
 connectDb()
@@ -26,10 +28,6 @@ app.use(express.urlencoded({extended: true}))
 app.use(router)
 
 
-
-
-
-
-app.listen(PORT, () => console.log('Server iniciado na porta', PORT))
+app.listen(PORT, HOST, () => console.log(`Server iniciado: ${HOST}:${PORT}`))
 
 

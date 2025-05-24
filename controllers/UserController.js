@@ -1,234 +1,300 @@
-import User from '../models/User.js'
-import bcrypt from 'bcryptjs'
-import dotenv from 'dotenv'
-import jwt from 'jsonwebtoken'
-import mongoose from 'mongoose'
+import User from "../models/User.js";
+import Review from "../models/Review.js";
+import bcrypt from "bcryptjs";
+import dotenv from "dotenv";
+import jwt from "jsonwebtoken";
+import mongoose from "mongoose";
 
+dotenv.config();
 
-dotenv.config()
-
-const jwtSecret = process.env.JWT_PASS
+const jwtSecret = process.env.JWT_PASS;
 
 const generateToken = (id) => {
-    return jwt.sign({id}, jwtSecret, {expiresIn: '7d'})
-}
+  return jwt.sign({ id }, jwtSecret, { expiresIn: "7d" });
+};
 
-const register = async(req, res)=>{
-    const{name, email, password } = req.body
+const register = async (req, res) => {
+  let { name, email, password } = req.body;
 
-    const user = await User.findOne({email})
+  email = email.toLowerCase();
+  name = name.charAt(0).toUpperCase() + name.slice(1);
 
-    // Se tiver usuario retorna 409 Conflict informando que o email já está em uso.
-    if(user){
-        return res.status(409).json({erro: ['Esse email já está em uso.']})
-    }
-    // 
+  const user = await User.findOne({ email });
 
-    // Gerar Hash com Bcrypt
-    const salt = await bcrypt.genSalt()
-    const passwordHash = await bcrypt.hash(password, salt)
+  // Se tiver usuario retorna 409 Conflict informando que o email já está em uso.
+  if (user) {
+    return res.status(409).json({ erro: ["Email já cadastrado."] });
+  }
+  //
 
+  // Gerar Hash com Bcrypt
+  const salt = await bcrypt.genSalt();
+  const passwordHash = await bcrypt.hash(password, salt);
 
-    // Novo usuario
-    const newUser = await User.create({
-        name,
-        email,
-        password: passwordHash
-    })
+  // Novo usuario
+  const newUser = await User.create({
+    name,
+    email,
+    password: passwordHash,
+  });
 
-    // Verificar se ocorreu tudo certo
-    if(!newUser){
-        return res.status(422).json({erro: ['Algo deu errado, tente novamente mais tarde.']})
-    }
+  // Verificar se ocorreu tudo certo
+  if (!newUser) {
+    return res
+      .status(422)
+      .json({ erro: ["Algo deu errado, tente novamente mais tarde."] });
+  }
 
-    res.status(201).json({
-        _id: newUser._id,
-        token: generateToken(newUser._id)
-    })
+  res.status(201).json({
+    _id: newUser._id,
+    token: generateToken(newUser._id),
+  });
+};
 
+const login = async (req, res) => {
+  const { email, password } = req.body;
 
+  const user = await User.findOne({ email });
 
+  // Checar se o usuário existe
+  if (!user) return res.status(404).json({ erro: ["Usuário não encontrado."] });
 
+  // Checar se a senha está errada
+  if (!(await bcrypt.compare(password, user.password))) {
+    return res.status(422).json({ erro: ["Senha incorreta."] });
+  }
 
+  // Retornar o usuario com o token
 
+  res.status(201).json({
+    _id: user._id,
+    token: generateToken(user._id),
+  });
+};
 
-}
+const updateUser = async (req, res) => {
+  const { name, password } = req.body;
 
+  const reqUser = req.user;
 
-const login = async(req, res) => {
-    const{email, password} = req.body
+  const user = await User.findById(new mongoose.Types.ObjectId(reqUser._id));
 
-    const user = await User.findOne({email})
 
-    // Checar se o usuário existe
-    if(!user) return res.status(404).json({erro: ['Usuário não encontrado.']})
+  if (name) {
+    user.name = name;
+  }
 
-    // Checar se a senha está errada
-    if(!await bcrypt.compare(password, user.password)){
-        return res.status(422).json({erro: ['Senha incorreta.']})
-    }
+  if (password) {
+    const salt = await bcrypt.genSalt();
+    const passportHash = await bcrypt.hash(password, salt);
 
-    // Retornar o usuario com o token
+    user.password = passportHash;
+  }
 
-    res.status(201).json({
-        _id: user._id,
-        token: generateToken(user._id)
-    })
-    
-}
+  await user.save();
 
-const updateUser = async(req, res) => {
-    const{name, password} = req.body
+  await Review.updateMany(
+    {userId: reqUser._id},
+    {$set :{userName: name}}
+  )
 
-    const reqUser = req.user
-   
-    const user = await User.findById(new mongoose.Types.ObjectId(reqUser._id))
 
-    if(name){
-        user.name = name
-    }
 
-    if(password){
-        const salt = await bcrypt.genSalt()
-        const passportHash = await bcrypt.hash(password, salt)
+  const userObj = user.toObject();
+  delete userObj.password;
 
-        user.password = passportHash
-    }
+  res.status(200).json(userObj);
+};
 
-    await user.save()
+const getCurrentUser = async (req, res) => {
+  const user = req.user;
+  res.status(200).json(user);
+};
 
-    const userObj = user.toObject()
-    delete userObj.password
-
-    res.status(200).json(userObj)
-}
-
-const getCurrentUser = async(req, res) => {
-    const user = req.user
-    res.status(200).json(user)
-}
-
-
-const followUser = async(req, res) => {
-    const{id} = req.params
-    const reqUser = req.user
-
-    if (!mongoose.Types.ObjectId.isValid(id)) {
-        return res.status(400).json({ error: ['ID inválido'] })
-    }
-
-    const user = await User.findById(new mongoose.Types.ObjectId(id))
-
-    if(user.followers.includes(reqUser._id)){
-        return res.status(422).json({error: ['Você já segue esse usuário.']})
-    }
-
-    if(user._id.equals(reqUser._id)){
-        return res.status(422).json({error: ['Você não pode se seguir!']})
-    }
-
-    const userAuth = await User.findById(new mongoose.Types.ObjectId(reqUser._id))
-
-
-    userAuth.following.push({
-        userId: id,
-        email: user.email
-    })
-
-    user.followers.push({
-        userId: reqUser._id,
-        email: userAuth.email
-    })
-    
-    
-    user.save()
-    .then(saved => 
-        userAuth.save(),
-        res.status(200).json({following: [user._id], message: ['Seguindo com sucesso']}))
-    .catch(e => {
-        console.error(e);
-        res.status(500).json({error: ['Algo deu errado']})
-        
-    })
-}
-
-const unfollowUser = async(req, res) => {
-    const{id} = req.params
-    const reqUser = req.user
-
-    if (!mongoose.Types.ObjectId.isValid(id)) {
-        return res.status(400).json({ error: ['ID inválido'] })
-    }
-
-    const user = await User.findById(new mongoose.Types.ObjectId(id))
-
-    const userAuth = await User.findById(new mongoose.Types.ObjectId(reqUser._id))
-
-    if(user._id.equals(reqUser._id)){
-        return res.status(422).json({error: ['Queria parar de me seguir, mas onde eu ia eu estava.']})
-    }
-
-    user.followers = user.followers.filter(filter => filter.email != reqUser.email)
-
-    userAuth.following = userAuth.following.filter(filter => filter.userId != id)
-
-    user.save()
-    .then(saved => 
-        userAuth.save(),
-        res.status(200).json({following: [user._id], message: ['Deixado de seguir']}))
-    .catch(e => {
-        console.error(e);
-        res.status(500).json({error: ['Algo deu errado']})
-        
-    })
-    
-
-
-
-
-
-
-
-
-}
-
-const getFollowings = async(req, res) => {
-    const reqUser = req.user
-
-    const user = await User.findById(new mongoose.Types.ObjectId(reqUser._id))
-
-    if(!user){
-        return res.status(404).json({error: ['Usuário não encontrado.']})
-    }
-
-    res.status(200).json(user.following)
-}
-
-const getFollowers = async(req, res) => {
-    const reqUser = req.user
-
-    const user = await User.findById(new mongoose.Types.ObjectId(reqUser._id))
-
-    if(!user){
-        return res.status(404).json({error: ['Usuário não encontrado.']})
-    }
-
-    res.status(200).json(user.followers)
-}
-
-
-
+const getUserById = async (req, res) => {
+  const { id } = req.params;
+
+  if (!mongoose.Types.ObjectId.isValid(id)) {
+    return res.status(400).json({ error: ["ID inválido"] });
+  }
+
+  const user = await User.findById(new mongoose.Types.ObjectId(id));
+
+  if (!user) {
+    res.status(404).json({ erro: ["Nenhum usuário encontrado."] });
+  } else {
+    const userObj = user.toObject();
+    delete userObj.password;
+
+    res.status(200).json(userObj);
+  }
+};
+
+const followUser = async (req, res) => {
+  const { id } = req.params;
+  const reqUser = req.user;
+
+  if (!mongoose.Types.ObjectId.isValid(id)) {
+    return res.status(400).json({ error: ["ID inválido"] });
+  }
+
+  const user = await User.findById(new mongoose.Types.ObjectId(id));
+
+  if (user.followers.includes(reqUser._id)) {
+    return res.status(422).json({ error: ["Você já segue esse usuário."] });
+  }
+
+  if (user._id.equals(reqUser._id)) {
+    return res.status(422).json({ error: ["Você não pode se seguir!"] });
+  }
+
+  const userAuth = await User.findById(
+    new mongoose.Types.ObjectId(reqUser._id)
+  );
+
+  userAuth.following.push({
+    userId: id,
+    email: user.email,
+  });
+
+  user.followers.push({
+    userId: reqUser._id,
+    email: userAuth.email,
+  });
+
+  user
+    .save()
+    .then(
+      (saved) => userAuth.save(),
+      res.status(200).json({ userId: user._id, email: user.email })
+    )
+    .catch((e) => {
+      console.error(e);
+      res.status(500).json({ error: ["Algo deu errado"] });
+    });
+};
+
+const unfollowUser = async (req, res) => {
+  const { id } = req.params;
+  const reqUser = req.user;
+
+  if (!mongoose.Types.ObjectId.isValid(id)) {
+    return res.status(400).json({ error: ["ID inválido"] });
+  }
+
+  const user = await User.findById(new mongoose.Types.ObjectId(id));
+
+  const userAuth = await User.findById(
+    new mongoose.Types.ObjectId(reqUser._id)
+  );
+
+  if (user._id.equals(reqUser._id)) {
+    return res.status(422).json({
+      error: ["Queria parar de me seguir, mas onde eu ia eu estava."],
+    });
+  }
+
+  user.followers = user.followers.filter(
+    (filter) => filter.email != reqUser.email
+  );
+
+  userAuth.following = userAuth.following.filter(
+    (filter) => filter.userId != id
+  );
+
+  user
+    .save()
+    .then(
+      (saved) => userAuth.save(),
+      res.status(200).json({ userId: user._id, email: user.email })
+    )
+    .catch((e) => {
+      console.error(e);
+      res.status(500).json({ error: ["Algo deu errado"] });
+    });
+};
+
+const getFollowings = async (req, res) => {
+  const reqUser = req.user;
+
+  if (!mongoose.Types.ObjectId.isValid(reqUser._id)) {
+    return res.status(400).json({ error: ["ID inválido"] });
+  }
+
+  const user = await User.findById(new mongoose.Types.ObjectId(reqUser._id));
+
+  if (!user) {
+    return res.status(404).json({ error: ["Usuário não encontrado."] });
+  }
+
+  res.status(200).json(user.following);
+};
+
+const getFollowers = async (req, res) => {
+  const reqUser = req.user;
+
+  if (!mongoose.Types.ObjectId.isValid(reqUser._id)) {
+    return res.status(400).json({ error: ["ID inválido"] });
+  }
+
+  const user = await User.findById(new mongoose.Types.ObjectId(reqUser._id));
+
+  if (!user) {
+    return res.status(404).json({ error: ["Usuário não encontrado."] });
+  }
+
+  res.status(200).json(user.followers);
+};
+
+const getPopularUsers = async (req, res) => {
+  let limit = parseInt(req.query.limit) || 5;
+
+  try {
+    const users = await User.aggregate([
+      {
+        $lookup: {
+          from: "reviews", // nome da coleção no MongoDB (normalmente é o plural do modelo)
+          localField: "_id", // campo em User
+          foreignField: "userId", // campo em Review que referencia User
+          as: "userReviews",
+        },
+      },
+
+      {
+        $addFields: {
+          followersCount: { $size: "$followers" },
+          reviewsCount: { $size: "$userReviews" },
+        },
+      },
+      {
+        $sort: { followersCount: -1, createdAt: -1 },
+      },
+
+      {
+        $limit: limit,
+      },
+
+      {
+        $unset: ["password", "following", "userReviews", "followers"],
+      },
+    ]);
+
+    res.status(200).json(users);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: ["Erro ao buscar usuários"] });
+  }
+};
 
 export {
-    register,
-    login,
-    getCurrentUser,
-    updateUser,
-
-    followUser,
-    unfollowUser,
-    getFollowings,
-    getFollowers,
-    
-}
-
+  register,
+  login,
+  getCurrentUser,
+  getUserById,
+  updateUser,
+  followUser,
+  unfollowUser,
+  getFollowings,
+  getFollowers,
+  getPopularUsers,
+};
