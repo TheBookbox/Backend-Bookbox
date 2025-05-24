@@ -1,4 +1,5 @@
 import User from "../models/User.js";
+import Review from "../models/Review.js";
 import bcrypt from "bcryptjs";
 import dotenv from "dotenv";
 import jwt from "jsonwebtoken";
@@ -78,6 +79,7 @@ const updateUser = async (req, res) => {
 
   const user = await User.findById(new mongoose.Types.ObjectId(reqUser._id));
 
+
   if (name) {
     user.name = name;
   }
@@ -90,6 +92,13 @@ const updateUser = async (req, res) => {
   }
 
   await user.save();
+
+  await Review.updateMany(
+    {userId: reqUser._id},
+    {$set :{userName: name}}
+  )
+
+
 
   const userObj = user.toObject();
   delete userObj.password;
